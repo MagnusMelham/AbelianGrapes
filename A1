@@ -1,0 +1,111 @@
+# import libraries
+
+import numpy as np # Import NumPy library. The "np" bit tells Python to give NumPy the alias of np. So now we can call np. function_name rather than numpy.
+import matplotlib.pyplot as plt
+from scipy.integrate import odeint 
+
+# --- First define the RHS of ODE system --- #
+
+beta = 2*(10**-5)
+
+def SIR(y, t):
+    # returns RHS of the SIR model
+    S, I, R = y
+
+    mu = 0.1
+    
+    N = S + I + R
+    Sdot = -beta * S * I
+    Idot = beta * S * I - mu * I
+    Rdot = mu * I
+    
+    return Sdot, Idot, Rdot
+
+# --- Problem setup --- #
+
+# set up time grid for the solution
+tf = 100
+Nsteps = 1000
+t = np.linspace(0, tf, Nsteps+1)
+
+# Set initial conditions and put into array y0
+S0 = 10**4 - 3
+I0 = 3
+R0 = 0
+y0 = np.array([S0, I0, R0])
+
+# --- Call the ODE solver and extract solutions --- #
+  
+y_sol = odeint(SIR, y0, t)
+
+# extract S, I, R from the solution array y
+S = y_sol[:,0]
+I = y_sol[:,1]
+R = y_sol[:,2]
+
+# --- Plot various interesting things --- #
+
+# plot the time evolution of the S, I, R
+plt.plot(t, S, label = "S")
+plt.plot(t, I, lw = 4, label = "I")
+plt.plot(t, R, label = "R")
+
+# labels etc
+plt.xlabel("time", fontsize = 14)
+plt.ylabel("S,I,R", fontsize = 14)
+plt.title("SIR model", fontsize = 16)
+plt.legend(fontsize = 14)
+
+# add marker for max I and show (o means circle, k means black for some reason, do I.argmax/10 as t = index*(100/1000) )
+plt.plot(I.argmax()*1/10, max(I),"o:k" , markersize = 5)
+plt.show()    
+
+# plot the evolution in the S,I phase plane
+plt.plot(S, I)
+
+# labels etc
+plt.xlabel("S", fontsize = 14)
+plt.ylabel("I", fontsize = 14)
+plt.title("Phase plane for SIR model", fontsize = 16)
+
+# put some markers to show initial and final states and max I value
+plt.plot(S[0], I[0], 'rd', markersize = 10)
+plt.plot(S[-1], I[-1], 'go', markersize = 10)
+plt.plot(S[I.argmax()], max(I),"o:k" , markersize = 5)
+plt.show()
+
+# --- Report the final values of S, I, R.  --- #
+
+print("At the end of the simulation, the final values of S, I, and R are (rounded):")
+print("S(t=tf) =", round(S[-1]))
+print("I(t=tf) =", round(I[-1]))
+print("R(t=tf) =", round(R[-1]))
+print("With the maximum value of I being (rounded):")
+print("I.max() =", round(max(I)))
+
+# change beta value and plot max(I) against beta
+
+# set up
+betamin = 1*(10**-6)
+betamax = 1*(10**-4)
+betalist = []
+Imax = [] 
+
+# incrementally change beta and find Imax for each
+for i in range(1001): 
+    betalist.append(betamin + i/1000*(betamax-betamin))
+    beta = betalist[i]
+                
+    y_sol = odeint(SIR, y0, t)
+    I = y_sol[:,1]
+
+    Imax.append(max(I))
+
+# plot Beta against Imax
+plt.plot(betalist,Imax)
+
+# laybels
+plt.xlabel("Beta", fontsize = 14)
+plt.ylabel("Max of I", fontsize = 14)
+plt.title("Maximum infected individuals vs beta parameter", fontsize = 16)
+plt.show()
